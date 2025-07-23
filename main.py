@@ -15,7 +15,8 @@ from handlers.orders import my_orders
 from handlers.game import game
 from handlers.admin import (
     admin_panel, admin_orders, admin_stats, manage_order,
-    confirm_payment, mark_shipped, mark_delivered, cancel_order
+    confirm_payment, mark_shipped, mark_delivered, cancel_order,
+    send_link,
 )
 from utils.keyboards import get_back_to_main_keyboard
 
@@ -114,6 +115,7 @@ def main():
         application.add_handler(CallbackQueryHandler(mark_shipped, pattern="^mark_shipped_"))
         application.add_handler(CallbackQueryHandler(mark_delivered, pattern="^mark_delivered_"))
         application.add_handler(CallbackQueryHandler(cancel_order, pattern="^cancel_order_"))
+        application.add_handler(CallbackQueryHandler(send_link, pattern="^send_link_"))
         
         # Text message handler for delivery address (must be last)
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_delivery_address))

@@ -319,6 +319,29 @@ class Database:
             return []
         finally:
             conn.close()
+
+    def get_order(self, order_id):
+        """Get single order by id"""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT o.id, o.user_id, o.product_key, o.color, o.quantity,
+                       o.total_price, o.status, o.payment_status, o.tracking_link,
+                       o.created_at, p.name, o.delivery_address
+                FROM orders o
+                JOIN products p ON o.product_key = p.product_key
+                WHERE o.id = ?
+                """,
+                (order_id,),
+            )
+            return cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Error getting order: {e}")
+            return None
+        finally:
+            conn.close()
     
     def get_all_orders(self):
         """Get all orders for admin"""

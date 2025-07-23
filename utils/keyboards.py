@@ -3,7 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 def get_start_keyboard():
     keyboard = [[InlineKeyboardButton("🛍️ Открыть магазин", callback_data="open_store")]]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_main_menu_keyboard():
@@ -13,7 +13,7 @@ def get_main_menu_keyboard():
         [InlineKeyboardButton("🎮 Игра \"Киношлёп\"", callback_data="game")],
         [InlineKeyboardButton("❓ Помощь", callback_data="help")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_catalog_keyboard():
@@ -23,7 +23,7 @@ def get_catalog_keyboard():
         [InlineKeyboardButton("🎲 Настольные игры", callback_data="category_board_games")],
         [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_products_keyboard(products, category):
@@ -31,14 +31,14 @@ def get_products_keyboard(products, category):
     for product_key, name, price, _ in products:
         keyboard.append([InlineKeyboardButton(f"{name} - {price} ₽", callback_data=f"product_{product_key}")])
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="catalog")])
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_product_colors_keyboard(product_key, colors):
     keyboard = [[InlineKeyboardButton(f"Цвет: {color}", callback_data=f"color_{product_key}_{color}")]
                 for color in colors]
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data=f"back_to_category_{product_key}")])
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_product_actions_keyboard(product_key, color=None):
@@ -50,12 +50,12 @@ def get_product_actions_keyboard(product_key, color=None):
         keyboard.append([InlineKeyboardButton("🛒 Добавить в корзину", callback_data=f"add_cart_{product_key}_none")])
         keyboard.append([InlineKeyboardButton("💳 Купить сейчас", callback_data=f"buy_now_{product_key}_none")])
     keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data=f"back_to_category_{product_key}")])
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_delivery_request_keyboard(product_key, color):
     keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data=f"product_{product_key}")]]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_order_confirmation_keyboard(product_key, color):
@@ -63,7 +63,7 @@ def get_order_confirmation_keyboard(product_key, color):
         [InlineKeyboardButton("✅ Подтверждаю", callback_data=f"confirm_order_{product_key}_{color}")],
         [InlineKeyboardButton("❌ Отмена", callback_data="main_menu")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_payment_keyboard(order_id):
@@ -72,7 +72,7 @@ def get_payment_keyboard(order_id):
         [InlineKeyboardButton("✅ Я оплатил", callback_data=f"payment_done_{order_id}")],
         [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_game_keyboard():
@@ -80,12 +80,12 @@ def get_game_keyboard():
         [InlineKeyboardButton("🎮 Играть в \"КИНОШЛЁП\"", url="https://center-kino.github.io/game_kinoshlep/")],
         [InlineKeyboardButton("🔙 Назад", callback_data="main_menu")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_orders_keyboard():
     keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="main_menu")]]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_admin_keyboard():
@@ -94,7 +94,7 @@ def get_admin_keyboard():
         [InlineKeyboardButton("📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_order_management_keyboard(order_id):
@@ -106,9 +106,9 @@ def get_order_management_keyboard(order_id):
         [InlineKeyboardButton("❌ Отменить", callback_data=f"cancel_order_{order_id}")],
         [InlineKeyboardButton("🔙 Назад", callback_data="admin_orders")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_back_to_main_keyboard():
     keyboard = [[InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")]]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

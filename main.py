@@ -1,134 +1,169 @@
-﻿import logging
-import asyncio
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-from telegram.error import TelegramError
+import logging
+from collections import defaultdict
+
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
 
 from config import BOT_TOKEN, SUPPORT_USERNAME
-from handlers.start import start, open_store, main_menu
-from handlers.catalog import (
-    catalog, show_category, show_product, select_color, 
+from handlers import (
+    start, open_store, main_menu,
+    catalog, show_category, show_product, select_color,
     add_to_cart, buy_now, back_to_category, handle_delivery_address,
-    confirm_order, payment_done
-)
-from handlers.orders import my_orders
-from handlers.game import game
-from handlers.admin import (
+    confirm_order, payment_done,
+    my_orders, game,
     admin_panel, admin_orders, admin_stats, manage_order,
     confirm_payment, mark_shipped, mark_delivered, cancel_order,
     send_link,
 )
 from utils.keyboards import get_back_to_main_keyboard
 
-# Set up logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def help_handler(update: Update, context):
-    """Handle help button - redirect to support"""
-    try:
-        query = update.callback_query
-        await query.answer()
-        
-        message = f"""
-❓ **ПОМОЩЬ**
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
 
-Для получения помощи обратитесь к нашему оператору:
+# Simple per-user state storage
+user_states = defaultdict(dict)
 
-👤 {SUPPORT_USERNAME}
 
-Оператор поможет вам с:
-• Вопросами по заказам
-• Проблемами с оплатой  
-• Выбором размеров
-• Любыми другими вопросами
+@dp.callback_query_handler(lambda c: c.data == 'help')
+async def help_handler(callback_query: types.CallbackQuery):
+    await callback_query.answer()
+    message = (
+        "❓ **ПОМОЩЬ**\n\n"
+        "Для получения помощи обратитесь к нашему оператору:\n\n"
+        f"👤 {SUPPORT_USERNAME}"
+    )
+    await callback_query.message.edit_text(message, parse_mode='Markdown', reply_markup=get_back_to_main_keyboard())
 
-Время работы: 9:00 - 21:00 (МСК)
-"""
-        
-        await query.edit_message_text(
-            text=message,
-            parse_mode='Markdown',
-            reply_markup=get_back_to_main_keyboard()
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in help handler: {e}")
 
-async def error_handler(update: Update, context):
-    """Handle errors"""
-    logger.error(f"Update {update} caused error {context.error}")
-    
-    if update and update.effective_message:
-        try:
-            await update.effective_message.reply_text(
-                "Произошла ошибка. Попробуйте позже или обратитесь в поддержку."
-            )
-        except TelegramError:
-            pass
+@dp.message_handler(commands=['start'])
+async def handle_start(message: types.Message):
+    await start(message)
+
+
+@dp.message_handler(commands=['admin'])
+async def handle_admin(message: types.Message):
+    await admin_panel(message)
+
+
+@dp.message_handler(regexp=r'^/manage_\d+$')
+async def handle_manage(message: types.Message):
+    await manage_order(message)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'open_store')
+async def handle_open_store(callback_query: types.CallbackQuery):
+    await open_store(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'main_menu')
+async def handle_main_menu(callback_query: types.CallbackQuery):
+    await main_menu(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'catalog')
+async def handle_catalog(callback_query: types.CallbackQuery):
+    await catalog(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('category_'))
+async def handle_show_category(callback_query: types.CallbackQuery):
+    await show_category(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('product_'))
+async def handle_show_product(callback_query: types.CallbackQuery):
+    await show_product(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('color_'))
+async def handle_select_color(callback_query: types.CallbackQuery):
+    await select_color(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('add_cart_'))
+async def handle_add_to_cart(callback_query: types.CallbackQuery):
+    await add_to_cart(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('buy_now_'))
+async def handle_buy_now_cb(callback_query: types.CallbackQuery):
+    await buy_now(callback_query, user_states[callback_query.from_user.id])
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('back_to_category_'))
+async def handle_back_to_category_cb(callback_query: types.CallbackQuery):
+    await back_to_category(callback_query)
+
+
+@dp.message_handler(lambda m: 'purchase' in user_states[m.from_user.id])
+async def handle_delivery_address_msg(message: types.Message):
+    await handle_delivery_address(message, user_states[message.from_user.id])
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('confirm_order_'))
+async def handle_confirm_order_cb(callback_query: types.CallbackQuery):
+    await confirm_order(callback_query, user_states[callback_query.from_user.id])
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('payment_done_'))
+async def handle_payment_done(callback_query: types.CallbackQuery):
+    await payment_done(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'my_orders')
+async def handle_my_orders(callback_query: types.CallbackQuery):
+    await my_orders(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'game')
+async def handle_game(callback_query: types.CallbackQuery):
+    await game(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'admin_orders')
+async def handle_admin_orders(callback_query: types.CallbackQuery):
+    await admin_orders(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'admin_stats')
+async def handle_admin_stats(callback_query: types.CallbackQuery):
+    await admin_stats(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('confirm_payment_'))
+async def handle_confirm_payment_cb(callback_query: types.CallbackQuery):
+    await confirm_payment(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('mark_shipped_'))
+async def handle_mark_shipped_cb(callback_query: types.CallbackQuery):
+    await mark_shipped(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('mark_delivered_'))
+async def handle_mark_delivered_cb(callback_query: types.CallbackQuery):
+    await mark_delivered(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('cancel_order_'))
+async def handle_cancel_order_cb(callback_query: types.CallbackQuery):
+    await cancel_order(callback_query)
+
+
+@dp.callback_query_handler(lambda c: c.data.startswith('send_link_'))
+async def handle_send_link_cb(callback_query: types.CallbackQuery):
+    await send_link(callback_query, bot)
+
 
 def main():
-    """Main function to run the bot"""
-    try:
-        # Create application
-        application = Application.builder().token(BOT_TOKEN).build()
-        
-        # Command handlers
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(CommandHandler("admin", admin_panel))
-        
-        # Dynamic command handler for order management
-        application.add_handler(MessageHandler(
-            filters.Regex(r'^/manage_\d+$') & filters.ChatType.PRIVATE,
-            manage_order
-        ))
-        
-        # Callback handlers
-        application.add_handler(CallbackQueryHandler(open_store, pattern="^open_store$"))
-        application.add_handler(CallbackQueryHandler(main_menu, pattern="^main_menu$"))
-        
-        # Catalog handlers
-        application.add_handler(CallbackQueryHandler(catalog, pattern="^catalog$"))
-        application.add_handler(CallbackQueryHandler(show_category, pattern="^category_"))
-        application.add_handler(CallbackQueryHandler(show_product, pattern="^product_"))
-        application.add_handler(CallbackQueryHandler(select_color, pattern="^color_"))
-        application.add_handler(CallbackQueryHandler(add_to_cart, pattern="^add_cart_"))
-        application.add_handler(CallbackQueryHandler(buy_now, pattern="^buy_now_"))
-        application.add_handler(CallbackQueryHandler(back_to_category, pattern="^back_to_category_"))
-        
-        # New order flow handlers
-        application.add_handler(CallbackQueryHandler(confirm_order, pattern="^confirm_order_"))
-        application.add_handler(CallbackQueryHandler(payment_done, pattern="^payment_done_"))
-        
-        # Other menu handlers
-        application.add_handler(CallbackQueryHandler(my_orders, pattern="^my_orders$"))
-        application.add_handler(CallbackQueryHandler(game, pattern="^game$"))
-        application.add_handler(CallbackQueryHandler(help_handler, pattern="^help$"))
-        
-        # Admin handlers
-        application.add_handler(CallbackQueryHandler(admin_orders, pattern="^admin_orders$"))
-        application.add_handler(CallbackQueryHandler(admin_stats, pattern="^admin_stats$"))
-        application.add_handler(CallbackQueryHandler(confirm_payment, pattern="^confirm_payment_"))
-        application.add_handler(CallbackQueryHandler(mark_shipped, pattern="^mark_shipped_"))
-        application.add_handler(CallbackQueryHandler(mark_delivered, pattern="^mark_delivered_"))
-        application.add_handler(CallbackQueryHandler(cancel_order, pattern="^cancel_order_"))
-        application.add_handler(CallbackQueryHandler(send_link, pattern="^send_link_"))
-        
-        # Text message handler for delivery address (must be last)
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_delivery_address))
-        
-        # Error handler
-        application.add_error_handler(error_handler)
-        
-        # Start the bot
-        logger.info("Starting bot...")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
-        
-    except Exception as e:
-        logger.error(f"Error starting bot: {e}")
+    logger.info('Starting bot...')
+    executor.start_polling(dp, skip_updates=True)
+
 
 if __name__ == '__main__':
     main()
+

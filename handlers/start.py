@@ -1,6 +1,5 @@
 import logging
-from telegram import Update
-from telegram.ext import ContextTypes
+from aiogram import types
 
 from config import ADMIN_IDS
 from database import db
@@ -15,31 +14,29 @@ from utils.messages import (
 
 logger = logging.getLogger(__name__)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(message: types.Message):
     """Handle /start command"""
-    user = update.effective_user
+    user = message.from_user
     db.add_user(user.id, user.username, user.first_name, user.last_name)
-    await update.message.reply_text(
+    await message.answer(
         get_welcome_message(),
         parse_mode="Markdown",
         reply_markup=get_start_keyboard(),
     )
 
-async def open_store(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def open_store(callback_query: types.CallbackQuery):
     """Open the main menu from start button"""
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(
+    await callback_query.answer()
+    await callback_query.message.edit_text(
         get_main_menu_message(),
         parse_mode="Markdown",
         reply_markup=get_main_menu_keyboard(),
     )
 
-async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def main_menu(callback_query: types.CallbackQuery):
     """Return to main menu"""
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(
+    await callback_query.answer()
+    await callback_query.message.edit_text(
         get_main_menu_message(),
         parse_mode="Markdown",
         reply_markup=get_main_menu_keyboard(),
